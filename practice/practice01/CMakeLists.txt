@@ -9,5 +9,4 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # Create project binary
 add_executable(TextBasedVectorOperations
 	main.cpp
-	Application.cpp
 )
