@@ -6,16 +6,17 @@
 #include <iomanip>
 #include <fstream>
 #include <memory>
+#include <optional>
 
 /*  Instructions:
     * Store the balance in a file named account_balance.txt.
     * On program startup:
     * If account_balance.txt does not exist, create it and set the initial balance to $100.00.
-    * If the file exists, read the current balance from the file.
+    * If the file exists, read the balance from the file.
     * Allow the user to perform the following actions:
         - Check the balance.
         - Deposit money (must be a positive amount).
-        - Withdraw money (cannot exceed the current balance or be negative).
+        - Withdraw money (cannot exceed the balance or be negative).
         - Update account_balance.txt immediately after every transaction.
 
     Requirements:
@@ -23,36 +24,59 @@
         - If the file cannot be opened, display an appropriate error message and exit.
         - Validate all user inputs
             - Deposits must be positive values.
-            - Withdrawals must not exceed the current balance and must be positive values.
+            - Withdrawals must not exceed the balance and must be positive values.
     * The program should be interactive, displaying a menu for the user to choose operations.
 */
 
 class IOManager {
     std::fstream m_File;
+    bool m_Initialized;
 
 public:
-    IOManager()
-    {
-        m_File.open("account_balance.txt");
-    }
+    IOManager() : m_Initialized(false) {}
 
     ~IOManager()
     {
         if (m_File.is_open()) m_File.close();
     }
 
-    int read()
+    // Initializes file input/output for account_balance.txt
+    //  - Returns 0 if file fails to open
+    //  - Returns 1 if the file is empty
+    //  - Returns 2 if the file contains data
+    int init()
     {
-        if (!m_File.is_open() || m_File.fail()) [[unlikely]] return 1;
+        m_File.open("account_balance.txt", std::ios::in | std::ios::out | std::ios::app);
+        if (!m_File) return 0;
 
-        return 0;
+        // Set initialized flag
+        m_Initialized = true;
+
+        // The return value conveys whether the file is empty or not.
+        std::string data;
+        std::getline(m_File, data);
+        if (data.empty()) [[unlikely]]
+        {
+            m_File << '\0';
+            return 1;
+        }
+        return 2;
     }
 
-    int write()
+    // Reads data from account_balance.txt
+    std::optional<std::string> read()
     {
-        if (!m_File.is_open() || m_File.fail()) [[unlikely]] return 1;
-
-        return 0;
+        if (!m_Initialized || !m_File.is_open() || m_File.fail()) [[unlikely]] return std::nullopt;
+        std::string data;
+        std::getline(m_File, data);
+        return data;
+    }
+    // Writes data to account_balance.txt
+    bool write(const std::string &data)
+    {
+        if (!m_Initialized || !m_File.is_open() || m_File.fail()) [[unlikely]] return false;
+        m_File << data;
+        return true;
     }
 };
 
@@ -64,18 +88,18 @@ public:
     explicit Account(IOManager &io) : m_Balance(100.0f), m_IOManager(io) {}
     ~Account() = default;
 
-    int deposit(const float amount)
+    bool deposit(const float amount)
     {
         m_Balance += amount;
-
-        return 0;
+        if (m_IOManager.write(std::to_string(amount))) [[likely]] return true;
+        return false;
     }
 
-    int withdraw(const float amount)
+    bool withdraw(const float amount)
     {
         m_Balance -= amount;
-
-        return 0;
+        if (m_IOManager.write(std::to_string(amount))) [[likely]] return true;
+        return false;
     }
 
     [[nodiscard]] float balance() const { return m_Balance; }
@@ -96,41 +120,42 @@ public:
 
     int exec()
     {
-        std::cout << "### Persistent Bank Account : by Mykal Sullivan ###\n";
+        std::cout << "*** Persistent Bank Account : by Mykal Sullivan ***\n";
 
+        // Exit prematurely if the IO manager fails to initialize
+        if (!m_IOManager->init())
+        {
+            std::cerr << "Account balance file failed to initialize\n"
+                         "Check file/directory permissions, then try again\n";
+            return -1;
+        }
+
+        // Main run loop
         while (m_Running)
         {
             // 1. Display menu
-            std::cout << "Options:\n";
-            std::cout << "- 1:" << std::setw(32) << std::setfill('.') << std::right << "Deposit\n"
-                      << "- 2:" << std::setw(32) << std::setfill('.') << std::right << "Withdraw\n"
-                      << "- 3:" << std::setw(32) << std::setfill('.') << std::right << "Balance\n"
-                      << "- 0:" << std::setw(32) << std::setfill('.') << std::right << "Exit\n";
+            std::cout << "Bank Menu\n";
+            printFormattedLine("1", "Deposit");
+            printFormattedLine("2", "Withdraw");
+            printFormattedLine("3", "Balance");
+            printFormattedLine("0", "Exit");
 
             // 2. Gather input
             int input {};
-            bool flag {true}; // Loop continues until user enters valid selection
+            bool flag {true};
             while (flag)
             {
                 flag = false;
 
-                std::cout << "-> ";
-                try
-                {
-                    std::cin >> input;
-                    std::cin.get();
-                }
-                catch (const std::exception &e)
+                // Prompt and validate input
+                std::cout << ":: ";
+                std::cin >> input;
+                if (std::cin.fail() || input > 3 || input < 0)
                 {
                     flag = true;
-                    std::cout << "Please enter an integral value.\n";
-                    continue;
-                }
-
-                if (input > 3 || input < 0)
-                {
-                    flag = true;
-                    std::cout << "Invalid option.\n";
+                    std::cin.clear();
+                    std::cin.ignore();
+                    std::cout << "Invalid selection\n";
                 }
             }
 
@@ -148,61 +173,171 @@ public:
             }
             catch (const std::exception &e)
             {
-                std::cout << "Oops: " << e.what() << "\n"
-                             "Exiting.\n";
+                std::cerr << "Error: " << e.what() << '\n';
                 return 1;
             }
+            std::cout << std::endl;
         }
         return 0;
     }
 
 private:
-    void depositBalance()
-    {
-        // 0. Retrieve and display balance
-
-
-        // 1. Prompt input
-
-
-        // 2. Gather input
-
-
-        // 3. Validate input
-
-
-        // 4. Deposit balance to account
-
-
-    }
-
-    void withdrawBalance()
-    {
-        // 0. Retrieve and display balance
-
-
-        // 1. Prompt input
-
-
-        // 2. Gather input
-
-
-        // 3. Validate input
-
-
-        // 4. Withdraw balance from account
-    }
-
-    void checkBalance()
+    void depositBalance() const
     {
         // Retrieve and display balance
+        checkBalance();
 
+        float input {};
+        bool flag {true};
+        bool shouldDeposit {true};
+        while (flag)
+        {
+            flag = false;
 
+            // Gather and validate input
+            std::cout << "Deposit amount [enter number less than 0 to cancel]: ";
+            std::cin >> input;
+            if (std::cin.fail())
+            {
+                flag = true;
+                std::cin.clear();
+                std::cin.ignore();
+                std::cout << "Please enter a numeric value\n";
+                continue;
+            }
+
+            // Check for cancelled transaction
+            if (input < 0)
+            {
+                shouldDeposit = false;
+                std::cout << "Transaction cancelled\n";
+            }
+
+            // Check for empty deposit
+            if (input == 0)
+            {
+                shouldDeposit = false;
+                std::cout << "Attempted to make an empty deposit\n";
+            }
+        }
+
+        // Deposit balance to account
+        if (shouldDeposit)
+        {
+            if (m_Account->deposit(input))
+            {
+                printFormattedCurrency("Deposited", input);
+                printFormattedCurrency("New balance", m_Account->balance());
+            }
+            else
+            {
+
+            }
+        }
+    }
+
+    void withdrawBalance() const
+    {
+        // Retrieve and display balance
+        checkBalance();
+
+        float input {};
+        bool flag {true};
+        bool shouldWithdraw {true};
+        while (flag)
+        {
+            flag = false;
+
+            // Gather and validate input
+            std::cout << "Withdrawal amount [enter number less than 0 to cancel]: ";
+            std::cin >> input;
+            if (std::cin.fail())
+            {
+                flag = true;
+                std::cin.clear();
+                std::cin.ignore();
+                std::cout << "Please enter a numeric value\n";
+                continue;
+            }
+
+            // Check for cancelled transaction
+            if (input < 0)
+            {
+                shouldWithdraw = false;
+                std::cout << "Transaction cancelled.\n";
+            }
+
+            // Check for empty withdrawal
+            if (input == 0)
+            {
+                shouldWithdraw = false;
+                std::cout << "Attempted to make empty withdrawal.\n";
+            }
+
+            // Check for overwithdrawal
+            static int overWithdrawalCount {0};
+            if (input > m_Account->balance())
+            {
+                shouldWithdraw = false;
+                overWithdrawalCount++;
+                std::cout << "Attempted to withdraw more than account balance.\n";
+                if (overWithdrawalCount > 2)
+                    throw std::runtime_error("Just because you're poor doesn't mean you can steal from this financial institution.");
+            }
+        }
+
+        // Withdraw balance from account
+        if (shouldWithdraw)
+        {
+            if (m_Account->withdraw(input))
+            {
+                printFormattedCurrency("Withdrew", input);
+                printFormattedCurrency("New balance", m_Account->balance());
+            }
+            else
+            {
+
+            }
+        }
+    }
+
+    void checkBalance() const
+    {
+        // Retrieve and display balance
+        printFormattedCurrency("Balance", m_Account->balance());
     }
 
     void exit()
     {
         m_Running = false;
+    }
+
+    static void printFormattedLine(const std::string &beginText, const std::string &endText)
+    {
+        // Calculate dot fill width
+        constexpr int totalDotWidth {64};
+        const int dotsWidth = totalDotWidth - (static_cast<int>(beginText.length()) + static_cast<int>(endText.length()));
+
+        // Print message
+        std::cout << beginText << " :"
+                  << std::setfill('.') << std::setw(dotsWidth + static_cast<int>(endText.length()))
+                  << endText << '\n';
+    }
+
+    static void printFormattedCurrency(const std::string &text, const float balance)
+    {
+        std::stringstream ss;
+        ss << '$' << std::fixed << std::setprecision(2) << balance;
+        const std::string balanceStr = ss.str();
+
+        // Calculate dot fill width
+        constexpr int totalDotWidth {64};
+        const int dotsWidth = totalDotWidth - (static_cast<int>(text.length()) + static_cast<int>(balanceStr.length()));
+
+        // Print message
+        std::cout << text << " :"
+                  << std::setfill('.') << std::setw(dotsWidth + static_cast<int>(balanceStr.length()))
+                  << balanceStr << '\n';
     }
 };
 
