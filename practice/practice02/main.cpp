@@ -41,26 +41,14 @@ public:
     }
 
     // Initializes file input/output for account_balance.txt
-    //  - Returns 0 if file fails to open
-    //  - Returns 1 if the file is empty
-    //  - Returns 2 if the file contains data
-    int init()
+    bool init()
     {
-        m_File.open("account_balance.txt", std::ios::in | std::ios::out | std::ios::app);
-        if (!m_File) return 0;
+        m_File.open("account_balance.txt", std::ios::in | std::ios::out);
+        if (!m_File) return false;
 
         // Set initialized flag
         m_Initialized = true;
-
-        // The return value conveys whether the file is empty or not.
-        std::string data;
-        std::getline(m_File, data);
-        if (data.empty()) [[unlikely]]
-        {
-            m_File << '\0';
-            return 1;
-        }
-        return 2;
+        return true;
     }
 
     // Reads data from account_balance.txt
@@ -71,11 +59,26 @@ public:
         std::getline(m_File, data);
         return data;
     }
+
     // Writes data to account_balance.txt
     bool write(const std::string &data)
     {
         if (!m_Initialized || !m_File.is_open() || m_File.fail()) [[unlikely]] return false;
         m_File << data;
+        return true;
+    }
+
+    // Truncates the contents of account_balance.txt (in case of errors)
+    bool truncate()
+    {
+        if (!m_Initialized || !m_File.is_open() || m_File.fail()) [[unlikely]] return false;
+
+        // Moving the pointer to the beginning of the file and closing it immediately clears the file contents
+        m_File.seekp(0, std::ios::beg);
+        m_File.close();
+
+        // Open the file back up again.
+        m_File.open("account_balance.txt", std::ios::in | std::ios::out);
         return true;
     }
 };
@@ -103,6 +106,11 @@ public:
     }
 
     [[nodiscard]] float balance() const { return m_Balance; }
+
+    void setBalance(const float balance)
+    {
+        m_Balance = balance;
+    }
 };
 
 class Application final {
@@ -122,12 +130,38 @@ public:
     {
         std::cout << "*** Persistent Bank Account : by Mykal Sullivan ***\n";
 
-        // Exit prematurely if the IO manager fails to initialize
-        if (!m_IOManager->init())
+        // Set up the I/O manager
         {
-            std::cerr << "Account balance file failed to initialize\n"
-                         "Check file/directory permissions, then try again\n";
-            return -1;
+            // Exit prematurely if the IO manager fails to initialize
+            if (const int ioInitResult = m_IOManager->init(); !ioInitResult)
+            {
+                std::cout << "Error: Account balance file failed to initialize\n"
+                             "Check file/directory permissions, then try again\n";
+                return -1;
+            }
+            else
+            {
+                float fileBalance {};
+                if (const auto fileBalanceStr = m_IOManager->read(); fileBalanceStr != std::nullopt)
+                {
+                    try
+                    {
+                        fileBalance = std::stof(fileBalanceStr.value());
+                    }
+                    catch (const std::invalid_argument &e)
+                    {
+                        std::cout << "Error: Failed to read account_balance.txt and must reset it\n";
+                        fileBalance = 100.0f;
+                        m_IOManager->truncate();
+                    }
+                }
+                else
+                {
+                    fileBalance = 100.0f;
+                    m_IOManager->write(std::to_string(fileBalance));
+                }
+                m_Account->setBalance(fileBalance);
+            }
         }
 
         // Main run loop
@@ -173,7 +207,7 @@ public:
             }
             catch (const std::exception &e)
             {
-                std::cerr << "Error: " << e.what() << '\n';
+                std::cout << "Error: " << e.what() << '\n';
                 return 1;
             }
             std::cout << std::endl;
