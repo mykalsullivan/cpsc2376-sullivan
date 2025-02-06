@@ -5,108 +5,99 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
-#include <memory>
-#include <optional>
 
-/*  Instructions:
-    * Store the balance in a file named account_balance.txt.
-    * On program startup:
-    * If account_balance.txt does not exist, create it and set the initial balance to $100.00.
-    * If the file exists, read the balance from the file.
-    * Allow the user to perform the following actions:
-        - Check the balance.
-        - Deposit money (must be a positive amount).
-        - Withdraw money (cannot exceed the balance or be negative).
-        - Update account_balance.txt immediately after every transaction.
-
-    Requirements:
-    * Ensure file operations are handled securely and gracefully. For example:
-        - If the file cannot be opened, display an appropriate error message and exit.
-        - Validate all user inputs
-            - Deposits must be positive values.
-            - Withdrawals must not exceed the balance and must be positive values.
-    * The program should be interactive, displaying a menu for the user to choose operations.
-*/
-
-class IOManager {
+// Used to store the account balance and file I/O operations. I was originally going to separate I/O ops into its own
+// class (and that would've been the better design choice), but I felt like being lazy.
+class Account {
+    float m_Balance;
     std::fstream m_File;
     bool m_Initialized;
 
 public:
-    IOManager() : m_Initialized(false) {}
+    explicit Account() : m_Balance(100.0f), m_Initialized(false)
+    {}
 
-    ~IOManager()
+    ~Account()
     {
         if (m_File.is_open()) m_File.close();
     }
 
-    // Initializes file input/output for account_balance.txt
+    // Initializes the account; must be ran before operations can be performed
     bool init()
     {
-        m_File.open("account_balance.txt", std::ios::in | std::ios::out);
-        if (!m_File) return false;
+        // Attempt to open account_balance.txt
+        m_File.open("account_balance.txt", std::ios::in);
 
-        // Set initialized flag
+        if (m_File.is_open()) // Attempt to read balance from file
+        {
+            m_File >> m_Balance;
+
+            if (m_File.fail())
+            {
+                std::cout << "Failed to read from 'account_balance.txt'\n";
+                return false;
+            }
+            m_File.close();
+        }
+        else // File doesn't exist, so create with initial balance
+        {
+            m_File.open("account_balance.txt", std::ios::out);
+            if (!m_File.is_open())
+            {
+                std::cout << "Failed to create 'account_balance.txt'\n";
+                return false;
+            }
+            m_File << std::fixed << std::setprecision(2) << m_Balance;
+            m_File.close();
+        }
+
+        // Open file for both reading and writing
+        m_File.open("account_balance.txt", std::ios::in | std::ios::out);
+        if (!m_File.is_open())
+        {
+            std::cout << "Failed to open 'account_balance.txt'\n";
+            return false;
+        }
+
         m_Initialized = true;
         return true;
     }
 
-    // Reads data from account_balance.txt
-    std::optional<std::string> read()
-    {
-        if (!m_Initialized || !m_File.is_open() || m_File.fail()) [[unlikely]] return std::nullopt;
-        std::string data;
-        std::getline(m_File, data);
-        return data;
-    }
-
-    // Writes data to account_balance.txt
-    bool write(const std::string &data)
-    {
-        if (!m_Initialized || !m_File.is_open() || m_File.fail()) [[unlikely]] return false;
-        m_File << data;
-        return true;
-    }
-
-    // Truncates the contents of account_balance.txt (in case of errors)
-    bool truncate()
-    {
-        if (!m_Initialized || !m_File.is_open() || m_File.fail()) [[unlikely]] return false;
-
-        // Moving the pointer to the beginning of the file and closing it immediately clears the file contents
-        m_File.seekp(0, std::ios::beg);
-        m_File.close();
-
-        // Open the file back up again.
-        m_File.open("account_balance.txt", std::ios::in | std::ios::out);
-        return true;
-    }
-};
-
-class Account {
-    float m_Balance;
-    IOManager &m_IOManager;
-
-public:
-    explicit Account(IOManager &io) : m_Balance(100.0f), m_IOManager(io) {}
-    ~Account() = default;
-
+    // Adds an arbitrary amount to the account balance
     bool deposit(const float amount)
     {
+        if (!m_Initialized || !m_File.is_open()) return false;
+
         m_Balance += amount;
-        if (m_IOManager.write(std::to_string(amount))) [[likely]] return true;
-        return false;
+
+        // Overwrite file with updated balance
+        m_File.seekp(0);
+        m_File << std::fixed << std::setprecision(2) << m_Balance;
+        m_File.flush();
+
+        m_File.close();
+        return true;
     }
 
+    // Removes an arbitrary amount from the account balance
     bool withdraw(const float amount)
     {
+        if (!m_Initialized || !m_File.is_open()) return false;
+
         m_Balance -= amount;
-        if (m_IOManager.write(std::to_string(amount))) [[likely]] return true;
-        return false;
+
+        // Overwrite file with updated balance
+        m_File.seekp(0);
+        m_File << std::fixed << std::setprecision(2) << m_Balance;
+        m_File.flush();
+
+        return true;
     }
 
+    // Retrieve current account balance in memory
     [[nodiscard]] float balance() const { return m_Balance; }
 
+    // Set account balance to an arbitrary amount
     void setBalance(const float balance)
     {
         m_Balance = balance;
@@ -115,53 +106,24 @@ public:
 
 class Application final {
     bool m_Running;
-    std::unique_ptr<IOManager> m_IOManager;
-    std::unique_ptr<Account> m_Account;
+    Account m_Account;
 
 public:
-    Application() : m_Running(true),
-                    m_IOManager(std::make_unique<IOManager>()),
-                    m_Account(std::make_unique<Account>(*m_IOManager))
+    Application() : m_Running(true)
     {}
 
     ~Application() = default;
 
+    // Main program loop
     int exec()
     {
         std::cout << "*** Persistent Bank Account : by Mykal Sullivan ***\n";
 
-        // Set up the I/O manager
+        // Initialize account
+        if (!m_Account.init())
         {
-            // Exit prematurely if the IO manager fails to initialize
-            if (const int ioInitResult = m_IOManager->init(); !ioInitResult)
-            {
-                std::cout << "Error: Account balance file failed to initialize\n"
-                             "Check file/directory permissions, then try again\n";
-                return -1;
-            }
-            else
-            {
-                float fileBalance {};
-                if (const auto fileBalanceStr = m_IOManager->read(); fileBalanceStr != std::nullopt)
-                {
-                    try
-                    {
-                        fileBalance = std::stof(fileBalanceStr.value());
-                    }
-                    catch (const std::invalid_argument &e)
-                    {
-                        std::cout << "Error: Failed to read account_balance.txt and must reset it\n";
-                        fileBalance = 100.0f;
-                        m_IOManager->truncate();
-                    }
-                }
-                else
-                {
-                    fileBalance = 100.0f;
-                    m_IOManager->write(std::to_string(fileBalance));
-                }
-                m_Account->setBalance(fileBalance);
-            }
+            std::cout << "Failed to initialize. Check file/directory permissions, then try again.\n";
+            return -1;
         }
 
         // Main run loop
@@ -189,7 +151,7 @@ public:
                     flag = true;
                     std::cin.clear();
                     std::cin.ignore();
-                    std::cout << "Invalid selection\n";
+                    std::cout << "Invalid selection.\n";
                 }
             }
 
@@ -216,7 +178,7 @@ public:
     }
 
 private:
-    void depositBalance() const
+    void depositBalance()
     {
         // Retrieve and display balance
         checkBalance();
@@ -255,22 +217,21 @@ private:
             }
         }
 
-        // Deposit balance to account
         if (shouldDeposit)
         {
-            if (m_Account->deposit(input))
+            if (m_Account.deposit(input))
             {
                 printFormattedCurrency("Deposited", input);
-                printFormattedCurrency("New balance", m_Account->balance());
+                printFormattedCurrency("New balance", m_Account.balance());
             }
             else
             {
-
+                std::cout << "Unknown deposit failure occurred.\n";
             }
         }
     }
 
-    void withdrawBalance() const
+    void withdrawBalance()
     {
         // Retrieve and display balance
         checkBalance();
@@ -310,7 +271,7 @@ private:
 
             // Check for overwithdrawal
             static int overWithdrawalCount {0};
-            if (input > m_Account->balance())
+            if (input > m_Account.balance())
             {
                 shouldWithdraw = false;
                 overWithdrawalCount++;
@@ -320,32 +281,34 @@ private:
             }
         }
 
-        // Withdraw balance from account
         if (shouldWithdraw)
         {
-            if (m_Account->withdraw(input))
+            if (m_Account.withdraw(input))
             {
                 printFormattedCurrency("Withdrew", input);
-                printFormattedCurrency("New balance", m_Account->balance());
+                printFormattedCurrency("New balance", m_Account.balance());
             }
             else
             {
-
+                std::cout << "Unknown withdrawal failure occurred.\n";
             }
         }
     }
 
+    // Displays account balance
     void checkBalance() const
     {
         // Retrieve and display balance
-        printFormattedCurrency("Balance", m_Account->balance());
+        printFormattedCurrency("Balance", m_Account.balance());
     }
 
+    // Ends run loop
     void exit()
     {
         m_Running = false;
     }
 
+    // Prints a formatted line
     static void printFormattedLine(const std::string &beginText, const std::string &endText)
     {
         // Calculate dot fill width
@@ -358,6 +321,7 @@ private:
                   << endText << '\n';
     }
 
+    // Prints a formatted line (for currency)
     static void printFormattedCurrency(const std::string &text, const float balance)
     {
         std::stringstream ss;
