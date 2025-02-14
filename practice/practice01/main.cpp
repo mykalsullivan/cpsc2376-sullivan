@@ -38,15 +38,13 @@ public:
 				flag = false;
 
 				std::cout << "-> ";
-				try
-				{
-					std::cin >> input;
-					std::cin.get();
-				}
-				catch (const std::exception &e)
+				std::cin >> input;
+				if (std::cin.fail())
 				{
 					flag = true;
-					std::cout << "Please enter an integral value.\n";
+					std::cin.clear();
+					std::cin.ignore();
+					std::cout << "Please enter a numeric value\n";
 					continue;
 				}
 
