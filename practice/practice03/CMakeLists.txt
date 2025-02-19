@@ -7,7 +7,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Create project binary
-add_executable(UnitTestingTestIGuess
+find_package(GTest REQUIRED)
+add_executable(practice03
         practice03.cpp
         MathUtils.cpp
 )
@@ -15,18 +16,17 @@ add_executable(UnitTestingTestIGuess
 # Enable testing
 enable_testing()
 
-# Find, create, and link GTest
-find_package(GTest REQUIRED)
-add_executable(test_UnitTestingTestIGuess
-        test_practice03.cpp
+# Include test directory
+set(CMAKE_INCLUDE_PATH ${CMAKE_INCLUDE_PATH} ../tests/practice03_test)
+
+# Create test binary
+add_executable(practice03_test
+        ${CMAKE_INCLUDE_PATH}/practice03_test.cpp
         MathUtils.cpp
 )
 
 # Link test executable
-target_link_libraries(test_UnitTestingTestIGuess
+target_link_libraries(practice03_test
         GTest::GTest
         GTest::Main
 )
-
-# Add test target
-add_test(NAME MathUtilsTest COMMAND test_UnitTestingTestIGuess)

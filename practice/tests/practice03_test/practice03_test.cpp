@@ -1,9 +1,10 @@
 //
-// Created by msullivan on 2/13/25.
+// Created by msullivan on 2/18/25.
 //
 
+#include "../../practice03/MathUtils.h"
+#include <vector>
 #include <gtest/gtest.h>
-#include "MathUtils.h"
 
 namespace {
     const std::vector g_Values {3, -1, 5, 7};
@@ -58,7 +59,6 @@ TEST(MathUtilsTest, FindMax_AllEqual)
 
 int main(int argc, char **argv)
 {
-    // Testing
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }

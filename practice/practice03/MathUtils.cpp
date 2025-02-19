@@ -28,9 +28,9 @@ int MathUtils::findMax(const std::vector<int>& numbers)
 {
     if (numbers.empty()) return 0; // Bug
     int maxVal = numbers[0];
-    for (std::size_t i = 1; i <= numbers.size(); i++) // Bug
+    for (std::size_t i = 1; i < numbers.size(); i++) // Bug
     {
-        if (numbers[i] >= maxVal) // Bug
+        if (numbers[i] > maxVal) // Bug
         {
             maxVal = numbers[i];
         }
