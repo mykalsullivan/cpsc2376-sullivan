@@ -11,6 +11,8 @@ find_package(GTest REQUIRED)
 add_executable(practice03
         practice03.cpp
         MathUtils.cpp
+        ../../projects/project01/Board.h
+        ../../projects/project01/Board.cpp
 )
 
 # Enable testing

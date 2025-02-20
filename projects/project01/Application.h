@@ -4,12 +4,12 @@
 
 #pragma once
 
-class Game {
+class Application {
     bool m_Running;
 
 public:
-    Game();
-    ~Game();
+    Application();
+    ~Application();
 
     int exec();
     void stop();
