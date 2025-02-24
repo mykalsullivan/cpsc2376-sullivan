@@ -30,6 +30,7 @@ void Quoridor::play()
 {
     makeBoard();
 
+    // Main run loop
     bool actionCompleted = true;
     while (m_Running)
     {
@@ -57,7 +58,6 @@ void Quoridor::play()
             }
             else break;
         }
-
 
         switch (input)
         {
@@ -131,7 +131,7 @@ bool Quoridor::move()
     for (size_t i = 0; i < directions.size(); ++i)
         std::cout << (i + 1) << ": " << directions.at(i) << "\n";
 
-    // Prompt for direction
+    // Prompt and retrieve user-chosen direction
     std::cout << "Choose a direction [1-" << directions.size() << "]: ";
     int dirInput;
     while (true)
@@ -145,13 +145,11 @@ bool Quoridor::move()
         }
         else break;
     }
-
-    // Get the chosen direction
     const std::string direction = directions.at(dirInput - 1);
 
-    // Update coordinates based on chosen direction
-    if (direction == "Up") newY--;
-    else if (direction == "Down") newY++;
+    // Update player coordinates based on chosen direction
+    if (direction == "Up") newY++;
+    else if (direction == "Down") newY--;
     else if (direction == "Left") newX--;
     else if (direction == "Right") newX++;
 
@@ -204,7 +202,7 @@ bool Quoridor::placeWall()
     }
 
     // Validate if start position is within bounds and not occupied
-    if (!isValidPosition(startX, startY))
+    if (!Board::isValidPosition(startX, startY))
     {
         std::cout << "Invalid starting position. Try again.\n";
         return false;
@@ -212,15 +210,16 @@ bool Quoridor::placeWall()
 
     // Display available directions to extend the wall
     std::vector<std::string> directions;
-    if (!detectCollision(startX, startY + 1)) // Up
+    if (Board::isValidPosition(startX, startY + 1) && !detectCollision(startX, startY + 1)) // Check if up is valid
         directions.emplace_back("Up");
-    if (!detectCollision(startX, startY - 1)) // Down
+    if (startY < 9 && !detectCollision(startX, startY - 1)) // Check if down is valid
         directions.emplace_back("Down");
-    if (!detectCollision(startX - 1, startY)) // Left
+    if (startX > 1 && !detectCollision(startX - 1, startY)) // Check if left is valid
         directions.emplace_back("Left");
-    if (!detectCollision(startX + 1, startY)) // Right
+    if (startX < 9 && !detectCollision(startX + 1, startY)) // Check if right is valid
         directions.emplace_back("Right");
 
+    // If there are no valid positions to extend the wall, return false
     if (directions.empty())
     {
         std::cout << "No available directions to extend the wall.\n";
@@ -249,17 +248,25 @@ bool Quoridor::placeWall()
     // Place the wall in the chosen direction
     const std::string direction = directions.at(dirInput - 1); // Get direction from input
     if (direction == "Up")
-        for (int i = 0; i < 2; ++i)
-            m_Board.setToken(GameToken::WALL, startX, 10 - (startY + i));
+    {
+        m_Board.setToken(GameToken::WALL, startX, startY);
+        m_Board.setToken(GameToken::WALL, startX, startY + 1);
+    }
     else if (direction == "Down")
-        for (int i = 0; i < 2; ++i)
-            m_Board.setToken(GameToken::WALL, startX, 10 - (startY - i));
+    {
+        m_Board.setToken(GameToken::WALL, startX, startY);
+        m_Board.setToken(GameToken::WALL, startX, startY - 1);
+    }
     else if (direction == "Left")
-        for (int i = 0; i < 2; ++i)
-            m_Board.setToken(GameToken::WALL, startX - i, 10 - startY);
+    {
+        m_Board.setToken(GameToken::WALL, startX, startY);
+        m_Board.setToken(GameToken::WALL, startX - 1, startY);
+    }
     else if (direction == "Right")
-        for (int i = 0; i < 2; ++i)
-            m_Board.setToken(GameToken::WALL, startX + i, 10 - startY);
+    {
+        m_Board.setToken(GameToken::WALL, startX, startY);
+        m_Board.setToken(GameToken::WALL, startX + 1, startY);
+    }
 
     // Decrement the current player's wall counter
     auto& player = (m_Turn == false) ? m_Player1 : m_Player2;
@@ -312,24 +319,16 @@ bool Quoridor::forfeit()
     }
 }
 
-bool Quoridor::isValidPosition(const int x, const int y)
-{
-    return (!(x < 1 || x > 9 || y < 1 || y > 9) && (m_Board.getToken(x, y) == GameToken::EMPTY));
-}
-
-
-bool Quoridor::isValidMove(const int oldX, const int oldY, int newX, int newY)
+bool Quoridor::isValidMove(const int oldX, const int oldY, int newX, int newY) const
 {
     // Check if new position is out of bounds
-    if (newX < 1 || newX > 9 || newY < 1 || newY > 9) return false;
+    if (!Board::isValidPosition(newX, newY)) return false;
 
-    // Get opponenet's position
+    // Get opponent's position
     const auto &opponent = (m_Turn == false) ? m_Player1 : m_Player2;
 
-    // Case 1: Normal move (1 tile)
     if (abs(newX - oldX) + abs(newY - oldY) == 1)
     {
-        // Prevent moving into a wall
         if (detectCollision(newX, newY)) return false;
 
         // Prevent moving into opponent's position unless jumping
@@ -361,8 +360,7 @@ bool Quoridor::isValidMove(const int oldX, const int oldY, int newX, int newY)
                         newX = opponent.x + 1;
                         newY = opponent.y;
                     }
-                    else
-                        return false;
+                    else return false;
                 }
                 else if (oldY == opponent.y)
                 {
@@ -376,8 +374,7 @@ bool Quoridor::isValidMove(const int oldX, const int oldY, int newX, int newY)
                         newX = opponent.x;
                         newY = opponent.y + 1;
                     }
-                    else
-                        return false;
+                    else return false;
                 }
             }
         }
@@ -390,18 +387,14 @@ bool Quoridor::isValidMove(const int oldX, const int oldY, int newX, int newY)
 
 bool Quoridor::detectCollision(const int x, const int y) const
 {
-    // Check for out of bounds
-    if (x < 0 || x > 9 || y < 0 || y > 9) return true;
-
-    // Return true if token is not empty
-    return m_Board.getToken(x, y) != GameToken::EMPTY;
+    // Return true if token is not empty or out of bounds
+    return (m_Board.getToken(x, y) != GameToken::EMPTY) || !Board::isValidPosition(x, y);
 }
 
-bool Quoridor::isValidWallPlacement(const int startX, const int startY, const int endX, const int endY)
+bool Quoridor::isValidWallPlacement(const int startX, const int startY, const int endX, const int endY) const
 {
     // Check if the wall placement is in bounds
-    if (startX < 1 || startX > 9 || startY < 1 || startY > 9 ||
-        endX < 1 || endX > 9 || endY < 1 || endY > 9)
+    if (!Board::isValidPosition(startX, startY) || !Board::isValidPosition(endX, endY))
     {
         std::cout << "Wall placement out of bounds.\n";
         return false;
@@ -436,7 +429,7 @@ bool Quoridor::isValidWallPlacement(const int startX, const int startY, const in
     return true;
 }
 
-bool Quoridor::isPathAvailable(const int startX, const int startY, const int endX, const int endY)
+bool Quoridor::isPathAvailable(const int startX, const int startY, const int endX, const int endY) const
 {
     if (startX == endX) // Vertical move
     {
@@ -462,19 +455,23 @@ bool Quoridor::isPathAvailable(const int startX, const int startY, const int end
 
 void Quoridor::checkForWinner()
 {
-    // Player 1 wins by reaching the top row
-    if (const auto &player = (m_Turn == false) ? m_Player1 : m_Player2; player.y == 1)
+    // Player 1 reaching right-side
+    if (m_Turn == false)
     {
-        m_GameStatus = GameState::PLAYER_1_WINS;
-        m_Running = false;
-        std::cout << "Player 1 wins!\n";
+        if (m_Player1.x == 9)
+        {
+            m_GameStatus = GameState::PLAYER_1_WINS;
+            m_Running = false;
+        }
     }
-    // Player 2 wins by reaching the bottom row
-    else if (player.y == 9)
+    // Player 2 reaching left-side
+    else if (m_Turn == true)
     {
-        m_GameStatus = GameState::PLAYER_2_WINS;
-        m_Running = false;
-        std::cout << "Player 2 wins!\n";
+        if (m_Player2.x == 1)
+        {
+            m_GameStatus = GameState::PLAYER_2_WINS;
+            m_Running = false;
+        }
     }
 }
 

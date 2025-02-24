@@ -19,4 +19,6 @@ public:
 
     void printBoard() const;
     void clear();
+
+    static bool isValidPosition(int x, int y);
 };

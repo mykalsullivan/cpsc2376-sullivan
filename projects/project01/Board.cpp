@@ -13,27 +13,26 @@ Board::Board()
 
 GameToken Board::getToken(const int x, const int y) const
 {
-    const int gridY = 9 - y;
-    return m_Grid[gridY][x - 1];
+    // Return a wall if invalid. This may cause bugs, but oh well.
+    if (!isValidPosition(x, y)) return GameToken::WALL;
+    return m_Grid.at(y - 1).at(x - 1);
 }
 
 bool Board::setToken(const GameToken token, const int x, const int y)
 {
     // Return false if out of bounds
-    if (y < 0 || y > 9 || x < 0 || x > 9) return false;
+    if (!isValidPosition(x, y)) return false;
 
-    const int gridY = 9 - y;
-    m_Grid[gridY][x - 1] = token;
+    m_Grid.at(y - 1).at(x - 1) = token;
     return true;
 }
 
 bool Board::removeToken(const int x, const int y)
 {
     // Return false if out of bounds
-    if (y < 0 || y > 9 || x < 0 || x > 9) return false;
+    if (!isValidPosition(x, y)) return false;
 
-    const int gridY = 9 - y;
-    m_Grid[gridY][x - 1] = GameToken::EMPTY;
+    m_Grid.at(y - 1).at(x - 1) = GameToken();
     return true;
 }
 
@@ -69,4 +68,10 @@ void Board::clear()
     for (auto &row : m_Grid)
         for (auto &token : row)
             token = GameToken::EMPTY;
+}
+
+bool Board::isValidPosition(const int x, const int y)
+{
+    // Out of bounds
+    return (!(x < 1 || x > 9 || y < 1 || y > 9));
 }

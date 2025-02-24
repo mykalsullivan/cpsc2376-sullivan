@@ -15,4 +15,5 @@ add_executable(project01
         Quoridor.cpp
         GameToken.h
         GameState.h
+        ../../practice/practice04/main.cpp
 )

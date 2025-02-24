@@ -32,13 +32,11 @@ private:
     bool placeWall();
     bool forfeit();
 
-    bool isValidPosition(int x, int y);
-
-    bool isValidMove(int oldX, int oldY, int newX, int newY);
+    bool isValidMove(int oldX, int oldY, int newX, int newY) const;
     bool detectCollision(int x, int y) const;
 
-    bool isValidWallPlacement(int startX, int startY, int endX, int endY);
-    bool isPathAvailable(int startX, int startY, int endX, int endY);
+    bool isValidWallPlacement(int startX, int startY, int endX, int endY) const;
+    bool isPathAvailable(int startX, int startY, int endX, int endY) const;
 
     void checkForWinner();
 };
