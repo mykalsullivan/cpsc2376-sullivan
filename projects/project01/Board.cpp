@@ -14,14 +14,14 @@ Board::Board()
 GameToken Board::getToken(const int x, const int y) const
 {
     // Return a wall if invalid. This may cause bugs, but oh well.
-    if (!isValidPosition(x, y)) return GameToken::WALL;
+    if (!checkBounds(x, y)) return GameToken::WALL;
     return m_Grid.at(y - 1).at(x - 1);
 }
 
 bool Board::setToken(const GameToken token, const int x, const int y)
 {
     // Return false if out of bounds
-    if (!isValidPosition(x, y)) return false;
+    if (!checkBounds(x, y)) return false;
 
     m_Grid.at(y - 1).at(x - 1) = token;
     return true;
@@ -30,7 +30,7 @@ bool Board::setToken(const GameToken token, const int x, const int y)
 bool Board::removeToken(const int x, const int y)
 {
     // Return false if out of bounds
-    if (!isValidPosition(x, y)) return false;
+    if (!checkBounds(x, y)) return false;
 
     m_Grid.at(y - 1).at(x - 1) = GameToken();
     return true;
@@ -70,7 +70,7 @@ void Board::clear()
             token = GameToken::EMPTY;
 }
 
-bool Board::isValidPosition(const int x, const int y)
+bool Board::checkBounds(const int x, const int y)
 {
     // Out of bounds
     return (!(x < 1 || x > 9 || y < 1 || y > 9));

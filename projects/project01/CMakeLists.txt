@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(GameProject)
+project(QuoridorGameProject)
 
 # Set CMake variables
 set(CMAKE_CXX_STANDARD 23)
@@ -15,5 +15,4 @@ add_executable(project01
         Quoridor.cpp
         GameToken.h
         GameState.h
-        ../../practice/practice04/main.cpp
 )

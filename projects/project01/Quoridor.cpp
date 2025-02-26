@@ -6,7 +6,7 @@
 #include <iostream>
 #include <vector>
 
-Quoridor::Quoridor() : m_GameStatus(GameState::NOT_STARTED), m_Player1(-1, -1), m_Player2(-1, -1), m_Turn(false), m_Running(true)
+Quoridor::Quoridor() : m_GameStatus(GameState::NOT_STARTED), m_Player1(-1, -1), m_Player2(-1, -1), m_Turn(false)
 {}
 
 void Quoridor::makeBoard()
@@ -15,90 +15,44 @@ void Quoridor::makeBoard()
     m_Board.clear();
 
     // 2. Init players
-    m_Player1.x = 1;
-    m_Player1.y = 5;
-    m_Player1.walls = 10;
-    m_Board.setToken(GameToken::PLAYER_1, 1, 5);
+    m_Player1 = {1, 5, 10};
+    m_Player2 = {9, 5, 10};
 
-    m_Player2.x = 9;
-    m_Player2.y = 5;
-    m_Player2.walls = 10;
+    // 3. Place players on board
+    m_Board.setToken(GameToken::PLAYER_1, 1, 5);
     m_Board.setToken(GameToken::PLAYER_2, 9, 5);
 }
 
 void Quoridor::play()
 {
+    m_GameStatus = GameState::ONGOING;
     makeBoard();
+    printRules();
 
     // Main run loop
-    bool actionCompleted = true;
-    while (m_Running)
+    while (true)
     {
         // 1. Print board
         m_Board.printBoard();
 
         // 2. Current player performs turn
+        std::string prompt = "<PLAYER " + std::to_string(m_Turn + 1) + ">\n"
+                            "1: Move\n"
+                            "2: Place wall\n"
+                            "3. Forfeit\n"
+                            "4. Print rules\n"
+                            "What do you want to do?";
 
-        /* Prompt current player for what they want to do */
-        std::cout << "<PLAYER " << std::to_string(m_Turn + 1) << ">\n"
-                  << "1: Move\n"
-                  << "2: Place wall\n"
-                  << "3. Forfeit\n"
-                  << "What do you want to do? [1-3]: ";
-
-        int input {-1};
-        while (true)
+        // 3. Check for win condition after action is successfully processed
+        if (const int input = getNumericInput(prompt, 1, 4); handleAction(input))
         {
-            std::cin >> input;
-            if (std::cin.fail() || input < 0 || input > 3)
-            {
-                std::cin.clear();
-                std::cin.ignore();
-                std::cout << "Invalid input. Try again. [1-3]: ";
-            }
-            else break;
-        }
-
-        switch (input)
-        {
-            case 1:
-                actionCompleted = move();
-            break;
-            case 2:
-                actionCompleted = placeWall();
-            break;
-            case 3:
-                actionCompleted = forfeit();
-            break;
-            default:
-                break;
-        }
-
-        // 3. Check for win condition
-        if (actionCompleted)
-        {
+            m_Turn = !m_Turn;
             checkForWinner();
-            if (m_Running) m_Turn = !m_Turn;
         }
-    }
 
-    // 3. Display result
-    std::string resultMessage;
-    switch (m_GameStatus)
-    {
-        case GameState::PLAYER_1_WINS:
-            resultMessage = "Player 1 wins!\n";
-            break;
-        case GameState::PLAYER_2_WINS:
-            resultMessage = "Player 2 wins!\n";
-            break;
-        case GameState::DRAW:
-            resultMessage = "Draw!\n";
-            break;
-        default:
-            resultMessage = "The game ended incorrectly. Fix that.\n";
+        // 4. Check if the game is still ongoing and exit if it isn't
+        if (m_GameStatus != GameState::ONGOING) break;
     }
-    std::cout << resultMessage << '\n';
 }
 
 bool Quoridor::move()
@@ -108,16 +62,68 @@ bool Quoridor::move()
     int newX = player.x;
     int newY = player.y;
 
+    const auto &opponent = (m_Turn == false) ? m_Player2 : m_Player1;
+
     // Display available directions
     std::vector<std::string> directions;
-    if (newY > 1 && !detectCollision(newX, newY - 1))  // Check if move up is valid
+    if (!detectCollision(newX, newY + 1))  // Check if move up is valid
         directions.emplace_back("Up");
-    if (newY < 9 && !detectCollision(newX, newY + 1))  // Check if move down is valid
+    if (!detectCollision(newX, newY - 1))  // Check if move down is valid
         directions.emplace_back("Down");
-    if (newX > 1 && !detectCollision(newX - 1, newY))  // Check if move left is valid
+    if (!detectCollision(newX - 1, newY))  // Check if move left is valid
         directions.emplace_back("Left");
-    if (newX < 9 && !detectCollision(newX + 1, newY))  // Check if move right is valid
+    if (!detectCollision(newX + 1, newY))  // Check if move right is valid
         directions.emplace_back("Right");
+
+    // Check if any direction involves jumping over the current player's opponent
+    std::vector<std::string> directionsWithJump;
+    if (opponent.x == newX && opponent.y == newY + 1 && !detectCollision(newX, newY + 2))
+        directionsWithJump.emplace_back("Up (jump)");
+    if (opponent.x == newX && opponent.y == newY - 1 && !detectCollision(newX, newY - 2))
+        directionsWithJump.emplace_back("Down (jump)");
+    if (opponent.y == newY && opponent.x == newX - 1 && !detectCollision(newX - 2, newY))
+        directionsWithJump.emplace_back("Left (jump)");
+    if (opponent.y == newY && opponent.x == newX + 1 && !detectCollision(newX + 2, newY))
+        directionsWithJump.emplace_back("Right (jump)");
+
+    // Provide diagonal movement options if there is a wall behind the opponent in a direction
+    std::vector<std::string> diagonalDirections;
+    if (opponent.x == newX && opponent.y == newY - 1) // Opponent is directly above
+    {
+        if (detectCollision(newX, newY - 2)) // Wall blocking jump
+        {
+            if (!detectCollision(newX - 1, newY - 1)) diagonalDirections.emplace_back("Left Up (jump)");
+            if (!detectCollision(newX + 1, newY - 1)) diagonalDirections.emplace_back("Right Up (jump)");
+        }
+    }
+    else if (opponent.x == newX && opponent.y == newY + 1) // Opponent is directly below
+    {
+        if (detectCollision(newX, newY + 2)) // Wall blocking jump
+        {
+            if (!detectCollision(newX - 1, newY + 1)) diagonalDirections.emplace_back("Left Down (jump)");
+            if (!detectCollision(newX + 1, newY + 1)) diagonalDirections.emplace_back("Right Down (jump)");
+        }
+    }
+    else if (opponent.y == newY && opponent.x == newX - 1) // Opponent is to the left
+    {
+        if (detectCollision(newX - 2, newY)) // Wall blocking jump
+        {
+            if (!detectCollision(newX - 1, newY - 1)) diagonalDirections.emplace_back("Left Up (jump)");
+            if (!detectCollision(newX - 1, newY + 1)) diagonalDirections.emplace_back("Left Down (jump)");
+        }
+    }
+    else if (opponent.y == newY && opponent.x == newX + 1) // Opponent is to the right
+    {
+        if (detectCollision(newX + 2, newY)) // Wall blocking jump
+        {
+            if (!detectCollision(newX + 1, newY - 1)) diagonalDirections.emplace_back("Right Up (jump)");
+            if (!detectCollision(newX + 1, newY + 1)) diagonalDirections.emplace_back("Right Down (jump)");
+        }
+    }
+
+    // Merge regular directions, jump directions, and diagonal directions
+    directions.insert(directions.end(), directionsWithJump.begin(), directionsWithJump.end());
+    directions.insert(directions.end(), diagonalDirections.begin(), diagonalDirections.end());
 
     // If there are no valid directions, return false
     if (directions.empty())
@@ -132,19 +138,7 @@ bool Quoridor::move()
         std::cout << (i + 1) << ": " << directions.at(i) << "\n";
 
     // Prompt and retrieve user-chosen direction
-    std::cout << "Choose a direction [1-" << directions.size() << "]: ";
-    int dirInput;
-    while (true)
-    {
-        std::cin >> dirInput;
-        if (std::cin.fail() || dirInput < 1 || dirInput > directions.size())
-        {
-            std::cin.clear();
-            std::cin.ignore();
-            std::cout << "Invalid input. Try again. [1-" << directions.size() << "]: ";
-        }
-        else break;
-    }
+    const int dirInput = getNumericInput("Choose a direction", 1, static_cast<int>(directions.size()));
     const std::string direction = directions.at(dirInput - 1);
 
     // Update player coordinates based on chosen direction
@@ -152,6 +146,14 @@ bool Quoridor::move()
     else if (direction == "Down") newY--;
     else if (direction == "Left") newX--;
     else if (direction == "Right") newX++;
+    else if (direction == "Up (jump)") newY += 2;
+    else if (direction == "Down (jump)") newY -= 2;
+    else if (direction == "Left (jump)") newX -= 2;
+    else if (direction == "Right (jump)") newX += 2;
+    else if (direction == "Left Up (jump)") { newX--; newY++; }
+    else if (direction == "Right Up (jump)") { newX++; newY++; }
+    else if (direction == "Left Down (jump)") { newX--; newY--; }
+    else if (direction == "Right Down (jump)") { newX++; newY--; }
 
     // Check if move is valid
     if (!isValidMove(player.x, player.y, newX, newY))
@@ -171,38 +173,23 @@ bool Quoridor::move()
 bool Quoridor::placeWall()
 {
     // Display number of current player's walls
-    int walls;
-    if (m_Turn) walls = m_Player1.walls;
-    else walls = m_Player2.walls;
+    const int &walls = (!m_Turn) ? m_Player1.walls : m_Player2.walls;
 
     std::cout << "Walls left: " << walls << '\n';
 
     // Check if the player has any walls left to use
-    if ((m_Turn && m_Player1.walls < 1) || (!m_Turn && m_Player2.walls < 1))
+    if (walls < 1)
     {
         std::cout << "You are out of walls.\n";
         return false;
     }
 
     // Prompt the player for wall placement coordinates
-    std::cout << "Enter the start (x, y) coordinates for the wall [1-9 1-9]: ";
-    int startX, startY;
-
-    while (true)
-    {
-        std::cin >> startX >> startY;
-
-        if (std::cin.fail())
-        {
-            std::cin.clear();
-            std::cin.ignore();
-            std::cout << "Invalid input. Try again. [1-9 1-9]: ";
-        }
-        else break;
-    }
+    const int startX = getNumericInput("x-coordinate?", 1, 9);
+    const int startY = getNumericInput("y-coordinate?", 1, 9);
 
     // Validate if start position is within bounds and not occupied
-    if (!Board::isValidPosition(startX, startY))
+    if (!Board::checkBounds(startX, startY))
     {
         std::cout << "Invalid starting position. Try again.\n";
         return false;
@@ -210,7 +197,7 @@ bool Quoridor::placeWall()
 
     // Display available directions to extend the wall
     std::vector<std::string> directions;
-    if (Board::isValidPosition(startX, startY + 1) && !detectCollision(startX, startY + 1)) // Check if up is valid
+    if (Board::checkBounds(startX, startY + 1) && !detectCollision(startX, startY + 1)) // Check if up is valid
         directions.emplace_back("Up");
     if (startY < 9 && !detectCollision(startX, startY - 1)) // Check if down is valid
         directions.emplace_back("Down");
@@ -231,19 +218,7 @@ bool Quoridor::placeWall()
         std::cout << (i + 1) << ": " << directions.at(i) << "\n";
 
     // Prompt for direction
-    std::cout << "Choose a direction [1-" << directions.size() << "]: ";
-    int dirInput;
-    while (true)
-    {
-        std::cin >> dirInput;
-        if (std::cin.fail() || dirInput < 1 || dirInput > directions.size())
-        {
-            std::cin.clear();
-            std::cin.ignore();
-            std::cout << "Invalid input. Try again. [1-" << directions.size() << "]: ";
-        }
-        else break;
-    }
+    const int dirInput = getNumericInput("Choose a direction", 1, static_cast<int>(directions.size()));
 
     // Place the wall in the chosen direction
     const std::string direction = directions.at(dirInput - 1); // Get direction from input
@@ -269,7 +244,7 @@ bool Quoridor::placeWall()
     }
 
     // Decrement the current player's wall counter
-    auto& player = (m_Turn == false) ? m_Player1 : m_Player2;
+    auto& player = (!m_Turn) ? m_Player1 : m_Player2;
     player.walls--;
 
     return true;
@@ -277,55 +252,38 @@ bool Quoridor::placeWall()
 
 bool Quoridor::forfeit()
 {
-    std::cout << "Are you sure you want to forfeit? [y/n]: ";
-
-    char input;
-    while (true)
+    if (const bool result = getBoolInput("Are you sure you want to forfeit?"))
     {
-        std::cin >> input;
-        std::cin.ignore();
-        if (std::cin.fail())
-        {
-            std::cin.clear();
-            std::cin.ignore();
-            std::cout << "Invalid input. Try again. [y/n]: ";
-            continue;
-        }
-
-        if (input == 'y')
-        {
-            if (m_Turn == false)
-            {
-                m_GameStatus = GameState::PLAYER_2_WINS;
-                m_Running = false;
-                return true;
-            }
-            if (m_Turn == true)
-            {
-                m_GameStatus = GameState::PLAYER_1_WINS;
-                m_Running = false;
-                return true;
-            }
-        }
-        else if (input == 'n')
-        {
-            std::cout << "Aborted.\n";
-            return false;
-        }
-        else
-        {
-            std::cout << "Invalid input. Try again. [y/n]: ";
-        }
+        if (!m_Turn) m_GameStatus = GameState::PLAYER_2_WINS;
+        else m_GameStatus = GameState::PLAYER_1_WINS;
+        return true;
     }
+    std::cout << "Aborted.\n";
+    return false;
 }
+
+bool Quoridor::printRules()
+{
+    std::cout << "\n=== Rules ===\n"
+              << "1. Each player starts on opposite sides of a 9x9 board.\n"
+              << "2. On each turn, the current player either moves their pawn, places a wall, forfeits, or displays this menu.\n"
+              << "3. Pawns can be moved one cell in any available direction, however they can jump over their opponent if there is not a wall behind them. "
+                 "If there is a wall behind the opponent, the pawn can be placed adjacent to it.\n"
+              << "4. Speaking of walls, each player gets 10 each."
+              << "5. Walls are 2 cells long and can be placed in any available direction. Normally, there would be checking to ensure you don't trap your "
+              << "opponent like a jerk, but I was too lazy to implement that here. Just forfeit if you get trapped. Take it like a man.\n"
+              << "6. The first player to move their cell to the opposite side wins!\n\n";
+    return true;
+}
+
 
 bool Quoridor::isValidMove(const int oldX, const int oldY, int newX, int newY) const
 {
     // Check if new position is out of bounds
-    if (!Board::isValidPosition(newX, newY)) return false;
+    if (!Board::checkBounds(newX, newY)) return false;
 
     // Get opponent's position
-    const auto &opponent = (m_Turn == false) ? m_Player1 : m_Player2;
+    const auto &opponent = (!m_Turn) ? m_Player1 : m_Player2;
 
     if (abs(newX - oldX) + abs(newY - oldY) == 1)
     {
@@ -388,20 +346,21 @@ bool Quoridor::isValidMove(const int oldX, const int oldY, int newX, int newY) c
 bool Quoridor::detectCollision(const int x, const int y) const
 {
     // Return true if token is not empty or out of bounds
-    return (m_Board.getToken(x, y) != GameToken::EMPTY) || !Board::isValidPosition(x, y);
+    return (m_Board.getToken(x, y) != GameToken::EMPTY) || !Board::checkBounds(x, y);
 }
 
 bool Quoridor::isValidWallPlacement(const int startX, const int startY, const int endX, const int endY) const
 {
     // Check if the wall placement is in bounds
-    if (!Board::isValidPosition(startX, startY) || !Board::isValidPosition(endX, endY))
+    if (!Board::checkBounds(startX, startY) || !Board::checkBounds(endX, endY))
     {
         std::cout << "Wall placement out of bounds.\n";
         return false;
     }
 
     // Ensure the wall placement is either vertical or horizontal
-    if (startX != endX && startY != endY) {
+    if (startX != endX && startY != endY)
+    {
         std::cout << "Walls must be placed either horizontally or vertically.\n";
         return false;
     }
@@ -419,59 +378,69 @@ bool Quoridor::isValidWallPlacement(const int startX, const int startY, const in
         }
     }
 
-    // Check if placing the wall would block the path between players
-    if (!isPathAvailable(m_Player1.x, m_Player1.y, m_Player2.x, m_Player2.y))
-    {
-        std::cout << "Wall placement would block the path between players.\n";
-        return false;
-    }
-
-    return true;
-}
-
-bool Quoridor::isPathAvailable(const int startX, const int startY, const int endX, const int endY) const
-{
-    if (startX == endX) // Vertical move
-    {
-        const int minY = (startY < endY) ? startY : endY;
-        const int maxY = (startY > endY) ? startY : endY;
-
-        for (int y = minY + 1; y < maxY; ++y)
-            if (m_Board.getToken(startX, y) == GameToken::WALL)
-                return false;
-    }
-    else if (startY == endY) // Horizontal move
-    {
-        const int minX = (startX < endX) ? startX : endX;
-        const int maxX = (startX > endX) ? startX : endX;
-
-        for (int x = minX + 1; x < maxX; ++x)
-            if (m_Board.getToken(x, startY) == GameToken::WALL)
-                return false;
-    }
-
+    /* Note: If I was smart enough, I would check to see if a player would be trapped. Since that is too complex for what we are doing currently,
+     * I won't implement it here. */
     return true;
 }
 
 void Quoridor::checkForWinner()
 {
     // Player 1 reaching right-side
-    if (m_Turn == false)
-    {
-        if (m_Player1.x == 9)
-        {
-            m_GameStatus = GameState::PLAYER_1_WINS;
-            m_Running = false;
-        }
-    }
+    if (m_Player1.x == 8)
+        m_GameStatus = GameState::PLAYER_1_WINS;
     // Player 2 reaching left-side
-    else if (m_Turn == true)
+    if (m_Player2.x == 1)
+        m_GameStatus = GameState::PLAYER_2_WINS;
+}
+
+bool Quoridor::handleAction(const int action)
+{
+    switch (action)
     {
-        if (m_Player2.x == 1)
-        {
-            m_GameStatus = GameState::PLAYER_2_WINS;
-            m_Running = false;
-        }
+        case 1: return move();
+        case 2: return placeWall();
+        case 3: return forfeit();
+        case 4: return printRules();
+        default: return false;
     }
 }
 
+int Quoridor::getNumericInput(const std::string &prompt, const int min, const int max)
+{
+    std::cout << prompt << " [" << std::to_string(min) << '-' << std::to_string(max) << "]: ";
+    int input;
+    while (true)
+    {
+        std::cin >> input;
+        if (!std::cin.fail() && input >= min && input <= max) return input;
+        std::cin.clear();
+        std::cin.ignore();
+        std::cout << "Invalid input. Try again [" << min << "-" << max << "]: ";
+    }
+}
+
+bool Quoridor::getBoolInput(const std::string &prompt)
+{
+    std::cout << prompt << " [y/n]: ";
+    char input;
+    while (true)
+    {
+        std::cin >> input;
+        std::cin.ignore();
+        if (!std::cin.fail())
+        {
+            switch (input)
+            {
+                case 'y': return true;
+                case 'n': return false;
+                default: std::cout << "Invalid input. Try again. [y/n]: ";
+            }
+        }
+        else
+        {
+            std::cin.clear();
+            std::cin.ignore();
+            std::cout << "Invalid input. Try again. [y/n]: ";
+        }
+    }
+}

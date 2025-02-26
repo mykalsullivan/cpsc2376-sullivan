@@ -8,6 +8,5 @@ enum class GameState {
     NOT_STARTED,
     ONGOING,
     PLAYER_1_WINS,
-    PLAYER_2_WINS,
-    DRAW
+    PLAYER_2_WINS
 };
