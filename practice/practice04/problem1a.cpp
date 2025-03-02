@@ -15,10 +15,15 @@ public:
 	// Starts the program run loop
 	int exec()
 	{
+		std::cout << "Temperature Converter by M. Sullivan\n";
+
+		m_Running = true;
 		while (m_Running)
 		{
-
+			std::string prompt {"Menu:\n1. Convert Fahrenheit to Celsius\n2. Convert Celsius to Fahrenheit\n3. Exit\nWhat do you want to do?"};
+			handleAction(static_cast<int>(getNumericInput(prompt, 1, 3, false)));
 		}
+		return 0;
 	}
 
 	// Stops the program
@@ -27,16 +32,45 @@ public:
 		m_Running = false;
 	}
 
+private:
 	// Read the method name
-	void convertCelsiusToFarenheit()
+	static void convertTemperature(const char scale = 'C')
 	{
-		getNumericInput("Temperature [> -273.15 *C]", -273.15, std::numeric_limits<double>::max());
-	}
+		// Select temperature scale
+		std::string prompt;
+		float minTemp {};
+		char newScale;
+		switch (scale)
+		{
+			case 'f':
+			case 'F':
+				prompt = "Temperature [> -273.15 *C]";
+				minTemp = -273.15f;
+				newScale = 'F';
+				break;
+			case 'c':
+			case 'C':
+				prompt = "Temperature [> -459.67 *F]";
+				minTemp = -459.67f;
+				newScale = 'C';
+				break;
+			default:
+				std::cout << "Invalid scale.\n"; return;
+		}
+		float temp = getNumericInput(prompt, minTemp, static_cast<float>(std::numeric_limits<double>::max()), false);
 
-	// Read the method name
-	void convertFarenheitToCelsius()
-	{
+		// Convert temperature
+		if (scale == 'c' || scale == 'C')
+		{
+			temp = ((temp - 32.0f) * (5.0f / 9.0f));
+		}
+		else if (scale == 'f' || scale == 'F')
+		{
+			temp = ((temp * (5.0f / 9.0f))) + 32.0f;
+		}
 
+		// Print converted temperature
+		std::cout << std::to_string(temp) << " *" << newScale << '\n';
 	}
 
 	// Helper function to perform an action based on input
@@ -44,18 +78,21 @@ public:
 	{
 		switch (action)
 		{
-			case 1: convertCelsiusToFarenheit(); break;
-			case 2: convertFarenheitToCelsius(); break;
+			case 1: convertTemperature('c'); break;
+			case 2: convertTemperature('f'); break;
 			case 3: stop(); break;
 			default: break;
 		}
 	}
 
 	// Displays a prompt to retrieve user input with bounds checking
-	static double getNumericInput(const std::string &prompt, const double min, const double max)
+	static float getNumericInput(const std::string &prompt, const float min, const float max, bool showRange)
 	{
-		std::cout << prompt << " [" << std::to_string(min) << '-' << std::to_string(max) << "]: ";
-		double input;
+		std::cout << prompt;
+		if (showRange) std::cout << " [" << std::to_string(min) << '-' << std::to_string(max) << "]";
+		std::cout << ": ";
+
+		float input;
 		while (true)
 		{
 			std::cin >> input;
