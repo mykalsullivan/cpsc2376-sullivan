@@ -16,13 +16,13 @@ public:
 	// Starts the program run loop
 	int exec()
 	{
-		std::cout << "Temperature Converter by M. Sullivan\n";
+		std::cout << "Basic Calculator by M. Sullivan\n";
 
 		m_Running = true;
 		while (m_Running)
 		{
-			const float num1 = Input::numberPrompt("1st number", std::numeric_limits<double>::min(), std::numeric_limits<double>::max(), false);
-			const float num2 = Input::numberPrompt("2nd number", std::numeric_limits<double>::min(), std::numeric_limits<double>::max(), false);
+			const float num1 = Input::numberPrompt("1st number", std::numeric_limits<float>::min(), std::numeric_limits<float>::max(), false);
+			const float num2 = Input::numberPrompt("2nd number", std::numeric_limits<float>::min(), std::numeric_limits<float>::max(), false);
 			const char operation = Input::textPrompt("Operation [+, -, *, /]", 0, 1, false).at(0);
 
 			calculate(num1, num2, operation);
@@ -42,7 +42,7 @@ private:
 	template <typename T>
 	static void calculate(const T num1, const T num2, const char operation)
 	{
-		int output {};
+		double output {};
 		switch (operation)
 		{
 			case '+':

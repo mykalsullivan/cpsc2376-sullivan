@@ -60,13 +60,13 @@ private:
 		float temp = getNumericInput(prompt, minTemp, static_cast<float>(std::numeric_limits<double>::max()), false);
 
 		// Convert temperature
-		if (scale == 'c' || scale == 'C')
+		if (scale == 'c' || scale == 'C') // Fahrenheit to celsius
 		{
 			temp = ((temp - 32.0f) * (5.0f / 9.0f));
 		}
-		else if (scale == 'f' || scale == 'F')
+		else if (scale == 'f' || scale == 'F') // Celsius to fahrenheit
 		{
-			temp = ((temp * (5.0f / 9.0f))) + 32.0f;
+			temp = ((temp * (9.0f / 5.0f))) + 32.0f;
 		}
 
 		// Print converted temperature

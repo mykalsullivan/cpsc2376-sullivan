@@ -4,6 +4,7 @@
 
 #pragma once
 #include <iostream>
+#include <limits>
 
 namespace Input
 {
@@ -12,37 +13,57 @@ namespace Input
     requires (std::integral<T> || std::floating_point<T>)
     T numberPrompt(const std::string &prompt, const T min, const T max, const bool showRange)
     {
-        std::cout << prompt;
-        if (showRange) std::cout << " [" << std::to_string(min) << '-' << std::to_string(max) << "]";
-        std::cout << ": ";
-
-        float input;
+        T input;
         while (true)
         {
+            std::cout << prompt;
+            if (showRange) std::cout << " [" << min << '-' << max << "]";
+            std::cout << ": ";
+
             std::cin >> input;
-            if (!std::cin.fail() && input >= min && input <= max) return input;
             std::cin.clear();
-            std::cin.ignore();
-            std::cout << "Invalid input. Try again [" << min << "-" << max << "]: ";
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+            if (!std::cin.fail() && input >= min && input <= max) return input;
+
+            std::cout << "Invalid input. Try again.\n";
         }
     }
 
     inline std::string textPrompt(const std::string &prompt, const int min, const int max, const bool showRange)
     {
-        std::cout << prompt;
-        if (showRange) std::cout << " [" << std::to_string(min) << '-' << std::to_string(max) << "]";
-        std::cout << ": ";
-
         std::string input;
         while (true)
         {
-            std::getline(std::cin, input);
-            if (input.size() > max)
-                std::cout << "Input must be less than " << std::to_string(max + 1) << " character(s) long\n";
-            else if (input.size() < min)
-                std::cout << "Input must be more than " << std::to_string(min) << " character(s) long\n";
-            else
-                return input;
+            std::cout << prompt;
+            if (showRange) std::cout << " [" << min << '-' << max << "]";
+            std::cout << ": ";
+
+            if (!std::getline(std::cin, input))
+            {
+                std::cerr << "Error reading input\n";
+                exit(EXIT_FAILURE);
+            }
+
+            if (input.empty())
+            {
+                std::cout << "Input cannot be empty. Try again.\n";
+                continue;
+            }
+
+            if (input.size() < static_cast<size_t>(min))
+            {
+                std::cout << "Input must be at least " << min << " character(s) long\n";
+                continue;
+            }
+
+            if (input.size() > static_cast<size_t>(max))
+            {
+                std::cout << "Input must be at most " << max << " character(s) long\n";
+                continue;
+            }
+
+            return input;
         }
     }
 

@@ -27,7 +27,7 @@ public:
         while (m_Running)
         {
             std::string prompt = "1: Add task\n2: Remove task\n3: View tasks\n4: Exit\nWhich one?";
-            handleAction(Input::numberPrompt(prompt, 1, 3, false));
+            handleAction(Input::numberPrompt(prompt, 1, 4, false));
         }
         return 0;
     }
@@ -42,7 +42,7 @@ private:
             case 3: showTasks(true); break;
             case 4: stop(); break;
             default:
-                std::cout << "Invalid selection\n"; break;
+                std::cout << "Invalid selection.\n"; break;
         }
     }
 
@@ -56,27 +56,47 @@ private:
 
     void removeTask()
     {
+        // Return if the task list is empty
+        if (m_Tasks.empty())
+        {
+            std::cout << "No tasks.\n";
+            return;
+        }
+
+        // Display short list of tasks on the list
         showTasks(false);
 
-        std::string prompt {"Select which one to remove (-1 to cancel)"};
-        const int selection = Input::numberPrompt(prompt, -1, static_cast<int>(m_Tasks.size()), true);
+        const std::string prompt {"Select which one to remove (0 to cancel)"};
+        const int selection = Input::numberPrompt(prompt, 0, static_cast<int>(m_Tasks.size()), true);
 
-        // Entering -1 cancels the operation
-        if (selection < 0) return;
+        // Entering 0 cancels the operation
+        if (selection == 0) return;
+
+        if (selection > static_cast<int>(m_Tasks.size()))
+        {
+            std::cout << "Invalid selection.\n";
+            return;
+        }
 
         // Remove an item
-        auto it = m_Tasks.begin();
-        std::advance(it, selection);
+        const auto it = std::next(m_Tasks.begin(), selection - 1);
         m_Tasks.erase(it);
-        std::cout << "Removed task " << std::to_string(selection) << '\n';
+        std::cout << "Removed task " << selection << ".\n";
     }
 
     void showTasks(const bool withDescription)
     {
-        static int i = 1;
+        // Return if the task list is empty
+        if (m_Tasks.empty())
+        {
+            std::cout << "No tasks.\n";
+            return;
+        }
+
+        int i = 1;
         for (const auto &[title, description] : m_Tasks)
         {
-            std::cout << std::to_string(i) << ": \"" << title << "\"\n";
+            std::cout << i << ": \"" << title << "\"\n";
             if (withDescription) std::cout << "\t- " << description << '\n';
             ++i;
         }
