@@ -43,7 +43,7 @@ private:
     {
         int sum = 0;
         for (auto it = m_Ints.begin(); it != m_Ints.end(); ++it)
-            if (*it.base() % 2 == 0)
+            if (*it % 2 == 0)
                 sum += *it;
 
         std::cout << "Sum of even numbers: " << sum << '\n';

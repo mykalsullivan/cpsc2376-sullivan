@@ -4,68 +4,55 @@
 
 #include "Input.h"
 #include <iostream>
-#include <limits>
+#include <numeric>
+#include <vector>
 
 class Application {
-	bool m_Running {false};
+    bool m_Running {false};
+    std::vector<int> m_Ints {};
 
 public:
-	Application() = default;
-	~Application() = default;
+    Application() = default;
+    ~Application() = default;
 
-	// Starts the program run loop
-	int exec()
-	{
-		std::cout << "Basic Calculator by M. Sullivan\n";
+    int exec()
+    {
+        std::cout << "Algorithms (std::accumulate) by M. Sullivan\n";
 
-		m_Running = true;
-		while (m_Running)
-		{
-			const float num1 = Input::numberPrompt("1st number", std::numeric_limits<float>::min(), std::numeric_limits<float>::max(), false);
-			const float num2 = Input::numberPrompt("2nd number", std::numeric_limits<float>::min(), std::numeric_limits<float>::max(), false);
-			const char operation = Input::textPrompt("Operation [+, -, *, /]", 0, 1, false).at(0);
+        gatherIntegers();
+        calculateSumOfVectorElements();
+        calculateProductOfAllVectorElements();
 
-			calculate(num1, num2, operation);
-			if (!Input::boolPrompt("Do it again?")) m_Running = false;
-		}
-		return 0;
-	}
+        return 0;
+    }
 
 private:
-	// Stops the program
-	void stop()
-	{
-		m_Running = false;
-	}
+    void gatherIntegers()
+    {
+        for (int i {0}; i < 5; i++)
+            m_Ints.emplace_back(Input::numberPrompt("Integer #" + std::to_string(i + 1), std::numeric_limits<int>::min(), std::numeric_limits<int>::max(), false));
+    }
 
-	// Read the method name
-	template <typename T>
-	static void calculate(const T num1, const T num2, const char operation)
-	{
-		double output {};
-		switch (operation)
-		{
-			case '+':
-				output = num1 + num2;
-				break;
-			case '-':
-				output = num1 - num2;
-				break;
-			case '*':
-				output = num1 * num2;
-				break;
-			case '/':
-				output = num1 / num2;
-				break;
-			default:
-				std::cout << "Invalid operation\n"; return;
-		}
-		std::cout << "Output: " << output << '\n';
-	}
+    void calculateSumOfVectorElements()
+    {
+        const int sum = std::accumulate(m_Ints.begin(), m_Ints.end(), 0);
+        std::cout << "Sum of vector elements: " << sum << '\n';
+    }
+
+    void calculateProductOfAllVectorElements()
+    {
+        const int product = std::accumulate(m_Ints.begin(), m_Ints.end(), 1, std::multiplies());
+        std::cout << "Product of vector elements: " << product << '\n';
+    }
+
+    void stop()
+    {
+        m_Running = false;
+    }
 };
 
 int main()
 {
-	Application app;
+    Application app;
     return app.exec();
 }
