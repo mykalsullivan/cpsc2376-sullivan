@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <limits>
+#include "Input.h"
 
 class Application {
 	bool m_Running {false};
@@ -21,7 +22,7 @@ public:
 		while (m_Running)
 		{
 			std::string prompt {"Menu:\n1. Convert Fahrenheit to Celsius\n2. Convert Celsius to Fahrenheit\n3. Exit\nWhat do you want to do?"};
-			handleAction(static_cast<int>(getNumericInput(prompt, 1, 3, false)));
+			handleAction(static_cast<int>(Input::numberPrompt(prompt, 1, 3, false)));
 		}
 		return 0;
 	}
@@ -57,7 +58,7 @@ private:
 			default:
 				std::cout << "Invalid scale.\n"; return;
 		}
-		float temp = getNumericInput(prompt, minTemp, static_cast<float>(std::numeric_limits<double>::max()), false);
+		float temp = Input::numberPrompt(prompt, minTemp, static_cast<float>(std::numeric_limits<double>::max()), false);
 
 		// Convert temperature
 		if (scale == 'c' || scale == 'C') // Fahrenheit to celsius
@@ -82,51 +83,6 @@ private:
 			case 2: convertTemperature('f'); break;
 			case 3: stop(); break;
 			default: break;
-		}
-	}
-
-	// Displays a prompt to retrieve user input with bounds checking
-	static float getNumericInput(const std::string &prompt, const float min, const float max, bool showRange)
-	{
-		std::cout << prompt;
-		if (showRange) std::cout << " [" << std::to_string(min) << '-' << std::to_string(max) << "]";
-		std::cout << ": ";
-
-		float input;
-		while (true)
-		{
-			std::cin >> input;
-			if (!std::cin.fail() && input >= min && input <= max) return input;
-			std::cin.clear();
-			std::cin.ignore();
-			std::cout << "Invalid input. Try again [" << min << "-" << max << "]: ";
-		}
-	}
-
-	// Displays a prompt to gather a boolean user value
-	static bool getBoolInput(const std::string &prompt)
-	{
-		std::cout << prompt << " [y/n]: ";
-		char input;
-		while (true)
-		{
-			std::cin >> input;
-			std::cin.ignore();
-			if (!std::cin.fail())
-			{
-				switch (input)
-				{
-					case 'y': return true;
-					case 'n': return false;
-					default: std::cout << "Invalid input. Try again. [y/n]: ";
-				}
-			}
-			else
-			{
-				std::cin.clear();
-				std::cin.ignore();
-				std::cout << "Invalid input. Try again. [y/n]: ";
-			}
 		}
 	}
 };
