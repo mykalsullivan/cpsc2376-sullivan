@@ -10,7 +10,6 @@ namespace Input
 {
     // Displays a prompt to retrieve user input with bounds checking
     template <typename T>
-    requires (std::integral<T> || std::floating_point<T>)
     T numberPrompt(const std::string &prompt, const T min, const T max, const bool showRange)
     {
         T input;

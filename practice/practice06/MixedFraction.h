@@ -5,12 +5,18 @@
 #pragma once
 #include "Fraction.h"
 
-class MixedFraction : public Fraction {
+class MixedFraction final : public Fraction {
+    int m_Whole {};
 
 public:
-    MixedFraction(int whole, const int n, const int d);
-    MixedFraction(const Fraction &fraction);
-    ~MixedFraction() = default;
+    MixedFraction(int whole, int n, int d);
+    explicit MixedFraction(const Fraction &fraction);
+    ~MixedFraction() override = default;
 
-    void operator<<(const Fraction &fraction);
+    [[nodiscard]] std::string toString() const override;
+    friend std::ostream &operator<<(std::ostream &out, const MixedFraction &mixedFraction);
+
+private:
+    // Helper function to adjust whole and fraction parts
+    void convertToMixed();
 };

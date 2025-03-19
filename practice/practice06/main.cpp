@@ -9,7 +9,9 @@
 
 class Calculator {
     Fraction m_Fraction {0, 1};
+    MixedFraction m_MixedFraction {0, 0, 1};
     bool m_Running {false};
+    bool m_DisplayAsMixed {false};
 
 public:
     int exec()
@@ -59,36 +61,44 @@ private:
     void add()
     {
         const Fraction newFrac = createFraction();
-        m_Fraction = m_Fraction + newFrac;
+        m_Fraction += newFrac;
     }
 
     void subtract()
     {
         const Fraction newFrac = createFraction();
-        m_Fraction = m_Fraction - newFrac;
+        m_Fraction -= newFrac;
     }
 
     void multiply()
     {
         const Fraction newFrac = createFraction();
-        m_Fraction = m_Fraction * newFrac;
+        m_Fraction *= newFrac;
     }
 
     void divide()
     {
         const Fraction newFrac = createFraction();
-        m_Fraction = m_Fraction / newFrac;
+        if (newFrac.numerator() == 0)
+        {
+            std::cout << "Cannot divide by zero!\n";
+            return;
+        }
+        m_Fraction /= newFrac;
     }
 
     void displayAsMixedFraction() const
     {
-
+        const MixedFraction mixed(m_Fraction);
+        std::cout << mixed << '\n';
     }
 
-    void clear()
+    void clear() const
     {
         m_Fraction.setNumerator(0);
         m_Fraction.setDenominator(1);
+        m_MixedFraction.setNumerator(0);
+        m_MixedFraction.setDenominator(1);
     }
 
     void stop()
@@ -97,7 +107,7 @@ private:
     }
 
     // Helper function to create a fraction from numerator and denominator
-    Fraction createFraction()
+    static Fraction createFraction()
     {
         // Prompt for fraction numerator
         std::string prompt = "Numerator";
@@ -113,7 +123,6 @@ private:
             num *= -1;
             den *= -1;
         }
-
         return Fraction(num, den);
     }
 };

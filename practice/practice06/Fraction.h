@@ -6,6 +6,7 @@
 #include <string>
 
 class Fraction {
+protected:
     mutable int num {};
     mutable int den {};
 
@@ -16,18 +17,19 @@ public:
     [[nodiscard]] int numerator() const { return num; }
     [[nodiscard]] int denominator() const { return den; }
 
-    void setNumerator(int n);
-    void setDenominator(int d);
-    [[nodiscard]] virtual std::string toString();
+    void setNumerator(int n) const;
+    void setDenominator(int d) const;
+    [[nodiscard]] virtual std::string toString() const;
 
     friend Fraction operator+(const Fraction &lhs, const Fraction &rhs);
     friend Fraction operator-(const Fraction &lhs, const Fraction &rhs);
     friend Fraction operator*(const Fraction &lhs, const Fraction &rhs);
     friend Fraction operator/(const Fraction &lhs, const Fraction &rhs);
-    friend Fraction &operator+=(const Fraction &lhs, const Fraction &rhs);
-    friend Fraction &operator-=(const Fraction &lhs, const Fraction &rhs);
-    friend Fraction &operator*=(const Fraction &lhs, const Fraction &rhs);
-    friend Fraction &operator/=(const Fraction &lhs, const Fraction &rhs);
+
+    Fraction &operator+=(const Fraction &rhs);
+    Fraction &operator-=(const Fraction &rhs);
+    Fraction &operator*=(const Fraction &rhs);
+    Fraction &operator/=(const Fraction &rhs);
 
 private:
     void simplify() const;
