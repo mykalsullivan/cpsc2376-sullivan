@@ -3,65 +3,32 @@
 //
 
 #pragma once
+#include <string>
 
 class Fraction {
-    int num {};
-    int den {};
+    mutable int num {};
+    mutable int den {};
 
 public:
-    explicit Fraction(const int n = 0, const int d = 1) : num(n), den(d)
-    {
-        if (d == 0) throw std::invalid_argument("Denominator cannot be 0");
-    }
-
-    ~Fraction() = default;
+    explicit Fraction(int n = 0, int d = 1);
+    virtual ~Fraction() = default;
 
     [[nodiscard]] int numerator() const { return num; }
     [[nodiscard]] int denominator() const { return den; }
 
-    void setNumerator(const int n)
-    {
-        num = n;
-    }
-    void setDenominator(const int d)
-    {
-        if (d == 0) throw std::invalid_argument("Denominator cannot be 0");
-        den = d;
-    }
+    void setNumerator(int n);
+    void setDenominator(int d);
+    [[nodiscard]] virtual std::string toString();
 
-    void simplify()
-    {
-        int a = num, b = den;
-        while (b != 0)
-        {
-            const int temp = b;
-            b = a % b;
-            a = temp;
-        }
+    friend Fraction operator+(const Fraction &lhs, const Fraction &rhs);
+    friend Fraction operator-(const Fraction &lhs, const Fraction &rhs);
+    friend Fraction operator*(const Fraction &lhs, const Fraction &rhs);
+    friend Fraction operator/(const Fraction &lhs, const Fraction &rhs);
+    friend Fraction &operator+=(const Fraction &lhs, const Fraction &rhs);
+    friend Fraction &operator-=(const Fraction &lhs, const Fraction &rhs);
+    friend Fraction &operator*=(const Fraction &lhs, const Fraction &rhs);
+    friend Fraction &operator/=(const Fraction &lhs, const Fraction &rhs);
 
-        const int gcd = a;
-
-        num /= gcd;
-        den /= gcd;
-    }
-
-    Fraction operator+(const Fraction &lhs, const Fraction &rhs)
-    {
-
-    }
-
-    Fraction operator-(const Fraction &lhs, const Fraction &rhs)
-    {
-
-    }
-
-    Fraction operator*(const Fraction &lhs, const Fraction &rhs)
-    {
-
-    }
-
-    Fraction operator/(const Fraction &lhs, const Fraction &rhs)
-    {
-
-    }
+private:
+    void simplify() const;
 };

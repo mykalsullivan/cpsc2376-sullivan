@@ -36,7 +36,7 @@ private:
 
         do
         {
-            input = Input::numberPrompt(prompt, std::numeric_limits<int>::min(), std::numeric_limits<int>::max(), false);
+            input = Input::numberPrompt(prompt, INT32_MIN, INT32_MAX, false);
             m_Ints.emplace_back(input);
         } while (input != 0);
     }

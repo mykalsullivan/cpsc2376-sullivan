@@ -1,0 +1,3 @@
+Salaried    101 Johnny  8000
+Hourly  102 Carl    29  140
+Commission  103 Jimbob  3000    15000   0.05
