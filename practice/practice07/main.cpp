@@ -19,8 +19,7 @@ public:
     Application() = default;
     ~Application()
     {
-        for (const auto employee : m_Employees)
-            delete employee;
+        purgeEmployees();
     }
 
     int exec()
@@ -33,7 +32,7 @@ public:
             return 1;
         }
 
-        m_Employees.clear(); // Ensure vector is empty before adding new employees
+        purgeEmployees(); // Ensure vector is empty before adding new employees
 
         std::string line;
         while (std::getline(file, line))
@@ -95,6 +94,14 @@ private:
             std::cerr << "Error: Failed to create employee (" << e.what() << ")\n";
         }
         return nullptr;
+    }
+
+    // Deletes all employee objects
+    void purgeEmployees()
+    {
+        for (const auto employee : m_Employees)
+            delete employee;
+        m_Employees.clear();
     }
 };
 
