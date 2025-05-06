@@ -12,7 +12,7 @@
 ## Screenshot:
 ![Screenshot](screenshot.png)
 
-_Note: This codebase is not complete. Placing walls and some of the game's core logic is not yet implemented._
+_Note: This codebase is not complete. Placing walls and some of the game's core logic is not yet implemented. In fact, the only goal of the game so far is to just reach the other side. Not too fun, but oh well._
 
 ## Prerequisites:
 Ensure you have the latest version of SDL2 and CMake installed.
@@ -31,9 +31,14 @@ cd projects/project04/
 mkdir build && cd build
 ```
 3. Run CMake to generate the build files, then build the project:\
-```
+```bash
 cmake -S .
 make
+```
+
+4. Run the executable! It should (hopefully) be as simple as that!
+```bash
+./Quoridor
 ```
 
 ### Windows:

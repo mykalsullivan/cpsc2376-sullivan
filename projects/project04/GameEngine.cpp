@@ -113,6 +113,9 @@ void GameEngine::drawRectangle(int centerX, int centerY, int rectWidth, int rect
 
 void GameEngine::drawText(const std::string& text, const int centerX, const int centerY, const SDL_Color color) const
 {
+    // Don't render empty text
+    if (text.empty()) return;
+
     SDL_Surface *textSurface = TTF_RenderText_Blended(m_Font, text.c_str(), color);
     if (!textSurface)
     {

@@ -30,6 +30,10 @@ void Game::exec()
 
     displayEndGameStatus();
 
+    // Prompt to replay
+    m_UI->updateStatusMessage("Press 'enter' to play again.", {255, 255, 255, 255});
+    m_UI->render();
+
     bool waitingForReplay = true;
     while (waitingForReplay)
     {
@@ -38,22 +42,22 @@ void Game::exec()
         {
             if (event.type == SDL_QUIT)
             {
-                waitingForReplay = false;
-                break;
+                exit(0);
             }
             if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_RETURN)
             {
-                // Reset the game state and start a new game
+                // Only reset the game state
                 m_State = std::make_unique<GameState>();
-                m_Logic = std::make_unique<GameLogic>(m_UI, m_State);
-                m_UI = std::make_unique<GameUI>(m_Logic, m_State);
-
                 m_State->status() = GameState::Status::ONGOING;
+                m_UI->updateStatusMessage("", {255, 255, 255, 255});
                 m_UI->render();
                 waitingForReplay = false;
             }
         }
     }
+
+    // Bad practice, but it gets the job done for now.
+    exec();
 }
 
 bool Game::execFrame() const

@@ -24,7 +24,7 @@ public:
                         int height = 960,
                         const std::string &fontPath = std::string(std::filesystem::current_path()) + "/Ubuntu-Bold.ttf",
                         int fontSize = 24,
-                        const std::string& soundPath = "move.wav");
+                        const std::string& soundPath = std::string(std::filesystem::current_path()) + "/move.wav");
     ~GameEngine();
 
     [[nodiscard]] GameWindow *window() const { return m_Window; }
