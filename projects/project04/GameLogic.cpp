@@ -242,7 +242,7 @@ void GameLogic::checkForWinner() const
     if (m_State->player1().x == 8)
         m_State->status() = GameState::Status::PLAYER_1_WINS;
     // Player 2 reaching left-side
-    if (m_State->player2().x == 1)
+    if (m_State->player2().x == 0)
         m_State->status() = GameState::Status::PLAYER_2_WINS;
 }
 
